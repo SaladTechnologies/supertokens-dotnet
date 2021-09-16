@@ -1,0 +1,9 @@
+{
+  "$schema": "http://json.schemastore.org/omnisharp",
+  "FormattingOptions": {
+    "enableEditorConfigSupport": true
+  },
+  "RoslynExtensionsOptions": {
+    "enableAnalyzersSupport": true
+  }
+}

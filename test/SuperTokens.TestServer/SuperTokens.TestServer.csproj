@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <Features>strict</Features>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SuperTokens.AspNetCore\SuperTokens.AspNetCore.csproj" />
+  </ItemGroup>
+
+</Project>

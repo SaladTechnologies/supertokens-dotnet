@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Authors>seniorquico</Authors>
+    <Copyright>Copyright © 2021 Kyle Dodson</Copyright>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <PackageDescription>Provides a client for the SuperTokens Core API.</PackageDescription>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageOutputPath Condition=" '$(PackageOutputPath)'=='' ">$(SourceRoot)/artifacts/$(Configuration)</PackageOutputPath>
+    <PackageProjectUrl>https://github.com/seniorquico/SuperTokens.AspNetCore</PackageProjectUrl>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <PackageTags>SuperTokens</PackageTags>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <Features>strict</Features>
+    <LangVersion>latest</LangVersion>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <Nullable>enable</Nullable>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
+
+</Project>

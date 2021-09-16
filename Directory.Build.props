@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+
+  <PropertyGroup>
+    <DefaultProjectTypeGuid Condition=" '$(MSBuildProjectExtension)' == '.csproj' ">{9A19103F-16F7-4668-BE54-9A1E7A4F7556}</DefaultProjectTypeGuid>
+  </PropertyGroup>
+
+  <!-- https://github.com/fsprojects/Paket/issues/3685 -->
+  <PropertyGroup>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,14 @@
+framework: net5.0
+storage: none
+
+source https://api.nuget.org/v3/index.json
+
+nuget coverlet.collector copy_local: true
+nuget Microsoft.AspNetCore.Mvc.Testing
+nuget Microsoft.CodeAnalysis.NetAnalyzers copy_local: true
+nuget Microsoft.NET.Test.Sdk copy_local: true
+nuget Microsoft.SourceLink.GitHub copy_local: true
+nuget Newtonsoft.Json
+nuget SonarAnalyzer.CSharp copy_local: true
+nuget xunit
+nuget xunit.runner.visualstudio copy_local: true

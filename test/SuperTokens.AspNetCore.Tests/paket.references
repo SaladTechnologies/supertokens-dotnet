@@ -1,0 +1,5 @@
+coverlet.collector
+Microsoft.AspNetCore.Mvc.Testing
+Microsoft.NET.Test.Sdk
+xunit
+xunit.runner.visualstudio

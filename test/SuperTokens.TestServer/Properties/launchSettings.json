@@ -1,0 +1,46 @@
+{
+  "profiles": {
+    "Host : 8080": {
+      "commandName": "Project",
+      "dotnetRunMessages": "true",
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:8080",
+      "environmentVariables": {
+        "ASPNETCORE_URLS": "http://*:8080",
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "Host : 8082": {
+      "commandName": "Project",
+      "dotnetRunMessages": "true",
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:8082",
+      "environmentVariables": {
+        "ASPNETCORE_URLS": "http://*:8082",
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SuperTokens__ApiDomain": "http://localhost.org:8082"
+      }
+    },
+    "WSL2 : 8080": {
+      "commandName": "WSL2",
+      "launchBrowser": false,
+      "launchUrl": "http://localhost:8080",
+      "environmentVariables": {
+        "ASPNETCORE_URLS": "http://*:8080",
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "distributionName": ""
+    },
+    "WSL2 : 8082": {
+      "commandName": "WSL2",
+      "launchBrowser": false,
+      "launchUrl": "http://localhost:8082",
+      "environmentVariables": {
+        "ASPNETCORE_URLS": "http://*:8082",
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SuperTokens__ApiDomain": "http://localhost.org:8082"
+      },
+      "distributionName": ""
+    }
+  }
+}
