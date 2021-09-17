@@ -52,7 +52,7 @@ namespace SuperTokens.AspNetCore
                 throw new InvalidOperationException("Failed to login the user.");
             }
 
-            await _handshakeContainer.OnHandshakeChanged(result.JwtSigningPublicKey, DateTimeOffset.FromUnixTimeMilliseconds(result.JwtSigningPublicKeyExpiryTime));
+            await _handshakeContainer.OnHandshakeChanged(result.JwtSigningPublicKeyList, result.JwtSigningPublicKey, DateTimeOffset.FromUnixTimeMilliseconds(result.JwtSigningPublicKeyExpiryTime));
 
             var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("The session recipe only works in a HTTP context.");
             if (context.Response.HasStarted)

@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using SuperTokens.Net;
@@ -33,7 +35,7 @@ namespace SuperTokens.AspNetCore
             var now = _clock.UtcNow;
 
             var handshake = _handshake;
-            if (handshake != null && handshake.JwtSigningPublicKeyExpiration > now)
+            if (handshake != null && handshake.AccessTokenSigningPublicKeyList.Length > 0)
             {
                 return handshake;
             }
@@ -41,16 +43,26 @@ namespace SuperTokens.AspNetCore
             await _refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                if (_handshake == null || _handshake.JwtSigningPublicKeyExpiration <= now)
+                if (_handshake == null || _handshake.AccessTokenSigningPublicKeyList.Length == 0)
                 {
                     try
                     {
                         var handshakeResponse = await _coreApiClient.GetHandshakeAsync(apiKey, cdiVersion, CancellationToken.None).ConfigureAwait(false);
                         if (handshakeResponse.Status.Equals("OK", StringComparison.OrdinalIgnoreCase))
                         {
+                            var jwtSigningPublicKeyList = handshakeResponse.JwtSigningPublicKeyList != null ?
+                                handshakeResponse.JwtSigningPublicKeyList.Select(keyInfo =>
+                                    new AccessTokenSigningKey(keyInfo.publicKey,
+                                        DateTimeOffset.FromUnixTimeMilliseconds(keyInfo.expirationTime),
+                                        DateTimeOffset.FromUnixTimeMilliseconds(keyInfo.createdAt)
+                                    )
+                                ) : new[] { new AccessTokenSigningKey(handshakeResponse.JwtSigningPublicKey,
+                                    DateTimeOffset.FromUnixTimeMilliseconds(handshakeResponse.JwtSigningPublicKeyExpiryTime),
+                                    DateTimeOffset.Now
+                                )};
+
                             _handshake = new Handshake(
-                                handshakeResponse.JwtSigningPublicKey,
-                                DateTimeOffset.FromUnixTimeMilliseconds(handshakeResponse.JwtSigningPublicKeyExpiryTime),
+                                jwtSigningPublicKeyList,
                                 handshakeResponse.AccessTokenBlacklistingEnabled,
                                 TimeSpan.FromMilliseconds(handshakeResponse.AccessTokenValidity),
                                 TimeSpan.FromMilliseconds(handshakeResponse.RefreshTokenValidity));
@@ -85,7 +97,7 @@ namespace SuperTokens.AspNetCore
             }
         }
 
-        public async Task OnHandshakeChanged(string jwtSigningPublicKey, DateTimeOffset jwtSigningPublicKeyExpiration)
+        public async Task OnHandshakeChanged(IEnumerable<Net.SessionRecipe.KeyInfo>? jwtSigningPublicKeyList, string jwtSigningPublicKey, DateTimeOffset jwtSigningPublicKeyExpiration)
         {
             var handshake = _handshake;
             if (handshake == null)
@@ -93,8 +105,19 @@ namespace SuperTokens.AspNetCore
                 return;
             }
 
-            if (handshake.JwtSigningPublicKey.Equals(jwtSigningPublicKey, StringComparison.Ordinal) &&
-                handshake.JwtSigningPublicKeyExpiration.ToUnixTimeSeconds() == jwtSigningPublicKeyExpiration.ToUnixTimeSeconds())
+            var updatedSigningPublicKeyList = jwtSigningPublicKeyList != null
+                ? jwtSigningPublicKeyList.Select(keyInfo =>
+                    new AccessTokenSigningKey(keyInfo.publicKey,
+                        DateTimeOffset.FromUnixTimeMilliseconds(keyInfo.expirationTime),
+                        DateTimeOffset.FromUnixTimeMilliseconds(keyInfo.createdAt)
+                    ))
+                : new[] {
+                    new AccessTokenSigningKey(jwtSigningPublicKey,
+                        jwtSigningPublicKeyExpiration,
+                        DateTimeOffset.Now
+                )};
+
+            if (handshake.AccessTokenSigningPublicKeyList.Equals(updatedSigningPublicKeyList))
             {
                 return;
             }
@@ -102,11 +125,10 @@ namespace SuperTokens.AspNetCore
             await _refreshLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (_handshake != null && (!_handshake.JwtSigningPublicKey.Equals(jwtSigningPublicKey, StringComparison.Ordinal) || _handshake.JwtSigningPublicKeyExpiration.ToUnixTimeSeconds() != jwtSigningPublicKeyExpiration.ToUnixTimeSeconds()))
+                if (_handshake != null && !handshake.AccessTokenSigningPublicKeyList.Equals(updatedSigningPublicKeyList))
                 {
                     _handshake = new Handshake(
-                        jwtSigningPublicKey,
-                        jwtSigningPublicKeyExpiration,
+                        updatedSigningPublicKeyList,
                         _handshake.AccessTokenBlacklistingEnabled,
                         _handshake.AccessTokenLifetime,
                         _handshake.RefreshTokenLifetime);
