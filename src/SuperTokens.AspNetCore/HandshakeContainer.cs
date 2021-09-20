@@ -34,7 +34,7 @@ namespace SuperTokens.AspNetCore
             var now = _clock.UtcNow;
 
             var handshake = _handshake;
-            if (handshake != null && handshake.AccessTokenSigningPublicKeyList.Length > 0)
+            if (handshake != null && handshake.GetAccessTokenSigningPublicKeyList(now).Length > 0)
             {
                 return handshake;
             }
@@ -42,7 +42,7 @@ namespace SuperTokens.AspNetCore
             await _refreshLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                if (_handshake == null || _handshake.AccessTokenSigningPublicKeyList.Length == 0)
+                if (_handshake == null || _handshake.GetAccessTokenSigningPublicKeyList(now).Length == 0)
                 {
                     try
                     {
@@ -104,6 +104,7 @@ namespace SuperTokens.AspNetCore
                 return;
             }
 
+            var now = _clock.UtcNow;
             var updatedSigningPublicKeyList = jwtSigningPublicKeyList != null
                 ? jwtSigningPublicKeyList.Select(keyInfo =>
                     new AccessTokenSigningKey(keyInfo.publicKey,
@@ -113,10 +114,10 @@ namespace SuperTokens.AspNetCore
                 : new[] {
                     new AccessTokenSigningKey(jwtSigningPublicKey,
                         jwtSigningPublicKeyExpiration,
-                        _clock.UtcNow
+                        now
                 )};
 
-            if (handshake.AccessTokenSigningPublicKeyList.SequenceEqual(updatedSigningPublicKeyList))
+            if (handshake.GetAccessTokenSigningPublicKeyList(now).SequenceEqual(updatedSigningPublicKeyList))
             {
                 return;
             }
@@ -124,7 +125,7 @@ namespace SuperTokens.AspNetCore
             await _refreshLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (_handshake != null && !handshake.AccessTokenSigningPublicKeyList.SequenceEqual(updatedSigningPublicKeyList))
+                if (_handshake != null && !handshake.GetAccessTokenSigningPublicKeyList(now).SequenceEqual(updatedSigningPublicKeyList))
                 {
                     _handshake = new Handshake(
                         updatedSigningPublicKeyList,

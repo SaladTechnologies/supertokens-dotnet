@@ -7,7 +7,7 @@ namespace SuperTokens.AspNetCore
 {
     public sealed class Handshake
     {
-        private ImmutableArray<AccessTokenSigningKey> accessTokenSigningPublicKeyList;
+        private ImmutableArray<AccessTokenSigningKey> _accessTokenSigningPublicKeyList;
 
         public Handshake(
             IEnumerable<AccessTokenSigningKey> jwtSigningPublicKeyList,
@@ -15,18 +15,15 @@ namespace SuperTokens.AspNetCore
             TimeSpan accessTokenLifetime,
             TimeSpan refreshTokenLifetime)
         {
-            this.AccessTokenSigningPublicKeyList = ImmutableArray.ToImmutableArray(jwtSigningPublicKeyList);
+            _accessTokenSigningPublicKeyList = ImmutableArray.ToImmutableArray(jwtSigningPublicKeyList);
 
             this.AccessTokenBlacklistingEnabled = accessTokenBlacklistingEnabled;
             this.AccessTokenLifetime = accessTokenLifetime;
             this.RefreshTokenLifetime = refreshTokenLifetime;
         }
 
-        public ImmutableArray<AccessTokenSigningKey> AccessTokenSigningPublicKeyList
-        {
-            get => accessTokenSigningPublicKeyList.Where(keyInfo => keyInfo.Expiration > DateTimeOffset.Now).ToImmutableArray();
-            private set => accessTokenSigningPublicKeyList = value;
-        }
+        public ImmutableArray<AccessTokenSigningKey> GetAccessTokenSigningPublicKeyList(DateTimeOffset now) =>
+            _accessTokenSigningPublicKeyList.Where(keyInfo => keyInfo.Expiration > now).ToImmutableArray();
 
         public bool AccessTokenBlacklistingEnabled { get; }
 

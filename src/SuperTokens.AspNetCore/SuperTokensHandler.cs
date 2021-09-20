@@ -167,7 +167,7 @@ namespace SuperTokens.AspNetCore
 
             var foundSigningKeyOlderThanToken = false;
             var isSignatureValid = false;
-            foreach (var keyInfo in handshake.AccessTokenSigningPublicKeyList)
+            foreach (var keyInfo in handshake.GetAccessTokenSigningPublicKeyList(now))
             {
                 if (JwtUtilities.Validate(components, keyInfo.PublicKey))
                 {
