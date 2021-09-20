@@ -9,7 +9,7 @@ using SuperTokens.Net;
 
 namespace SuperTokens.AspNetCore
 {
-    internal sealed class ApiVersionContainer : BackgroundService
+    internal sealed class ApiVersionContainer : BackgroundService, IApiVersionContainer
     {
         private static readonly TimeSpan AutomaticRefreshInterval = new(0, 12, 0, 0, 0);
 
@@ -42,6 +42,11 @@ namespace SuperTokens.AspNetCore
             return apiVersion != null
                 ? ValueTask.FromResult(apiVersion)
                 : new ValueTask<string>(this.RefreshApiVersionAsync(cancellationToken));
+        }
+
+        public ValueTask<string> GetApiVersionAsync()
+        {
+            return this.GetApiVersionAsync(CancellationToken.None);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
