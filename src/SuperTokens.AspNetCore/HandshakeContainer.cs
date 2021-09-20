@@ -18,7 +18,6 @@ namespace SuperTokens.AspNetCore
         private readonly ICoreApiClient _coreApiClient;
 
         private readonly ILogger<HandshakeContainer> _logger;
-
         private readonly SemaphoreSlim _refreshLock = new(1);
 
         private Handshake? _handshake;
@@ -58,7 +57,7 @@ namespace SuperTokens.AspNetCore
                                     )
                                 ) : new[] { new AccessTokenSigningKey(handshakeResponse.JwtSigningPublicKey,
                                     DateTimeOffset.FromUnixTimeMilliseconds(handshakeResponse.JwtSigningPublicKeyExpiryTime),
-                                    DateTimeOffset.Now
+                                    now
                                 )};
 
                             _handshake = new Handshake(
@@ -114,10 +113,10 @@ namespace SuperTokens.AspNetCore
                 : new[] {
                     new AccessTokenSigningKey(jwtSigningPublicKey,
                         jwtSigningPublicKeyExpiration,
-                        DateTimeOffset.Now
+                        _clock.UtcNow
                 )};
 
-            if (handshake.AccessTokenSigningPublicKeyList.Equals(updatedSigningPublicKeyList))
+            if (handshake.AccessTokenSigningPublicKeyList.SequenceEqual(updatedSigningPublicKeyList))
             {
                 return;
             }
@@ -125,7 +124,7 @@ namespace SuperTokens.AspNetCore
             await _refreshLock.WaitAsync().ConfigureAwait(false);
             try
             {
-                if (_handshake != null && !handshake.AccessTokenSigningPublicKeyList.Equals(updatedSigningPublicKeyList))
+                if (_handshake != null && !handshake.AccessTokenSigningPublicKeyList.SequenceEqual(updatedSigningPublicKeyList))
                 {
                     _handshake = new Handshake(
                         updatedSigningPublicKeyList,

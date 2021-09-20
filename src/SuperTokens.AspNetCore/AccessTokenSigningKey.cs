@@ -20,7 +20,9 @@ namespace SuperTokens.AspNetCore
         public DateTimeOffset Creation { get; }
 
         public override bool Equals(object? obj) => this.Equals(obj as AccessTokenSigningKey);
-        public bool Equals(AccessTokenSigningKey? other) => other != null && this.PublicKey == other.PublicKey && this.Expiration.Equals(other.Expiration) && this.Creation.Equals(other.Creation);
+
+        // We do not consider the creation time during equality check: this information is not available on old APIs.
+        public bool Equals(AccessTokenSigningKey? other) => other != null && this.PublicKey == other.PublicKey && this.Expiration.Equals(other.Expiration);
         public override int GetHashCode() => HashCode.Combine(this.PublicKey, this.Expiration, this.Creation);
     }
 }

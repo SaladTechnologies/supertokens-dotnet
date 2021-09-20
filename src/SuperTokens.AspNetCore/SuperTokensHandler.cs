@@ -148,35 +148,38 @@ namespace SuperTokens.AspNetCore
             }
 
             var handshake = await _handshakeContainer.GetHandshakeAsync(this.Options.CoreApiKey, null, this.Context.RequestAborted);
-            AccessToken? parsedAccessToken = null;
+            AccessToken? parsedAccessToken;
 
             // If we have no key old enough to verify this access token we should reject it without calling the core
+
+            if (!JwtUtilities.TryParse(accessToken, out var jwtPayload, out var components) ||
+                !AccessTokenUtilities.TryParse(jwtPayload, out parsedAccessToken))
+            {
+                await this.SendTryRefreshTokenResponse();
+                return AuthenticateResult.Fail("The access token is invalid.");
+            }
+
+            if (parsedAccessToken.ExpiryTime < now)
+            {
+                await this.SendTryRefreshTokenResponse();
+                return AuthenticateResult.Fail("The access token expired.");
+            }
+
             var foundSigningKeyOlderThanToken = false;
             var isSignatureValid = false;
             foreach (var keyInfo in handshake.AccessTokenSigningPublicKeyList)
             {
-                if (!JwtUtilities.TryParseAndValidate(accessToken, keyInfo.PublicKey, out var jwtPayload, out isSignatureValid) ||
-                    !AccessTokenUtilities.TryParse(jwtPayload, out parsedAccessToken))
+                if (JwtUtilities.Validate(components, keyInfo.PublicKey))
                 {
-                    await this.SendTryRefreshTokenResponse();
-                    return AuthenticateResult.Fail("The access token is invalid.");
-                }
-                else
-                {
-                    // The token was successfully parsed at least
-                    if (parsedAccessToken.ExpiryTime < now)
-                    {
-                        await this.SendTryRefreshTokenResponse();
-                        return AuthenticateResult.Fail("The access token expired.");
-                    }
-
                     // If we reached a key older than the token then we don't need to try older keys since
                     // the keys are always signed with the latest available key
                     // The keylist in the handshake is ordered from newest to oldest.
-                    if (keyInfo.Creation < parsedAccessToken.TimeCreated) {
-                        foundSigningKeyOlderThanToken = true;
-                        break;
-                    }
+                    isSignatureValid = true;
+                }
+                if (keyInfo.Creation < parsedAccessToken.TimeCreated)
+                {
+                    foundSigningKeyOlderThanToken = true;
+                    break;
                 }
             }
 
