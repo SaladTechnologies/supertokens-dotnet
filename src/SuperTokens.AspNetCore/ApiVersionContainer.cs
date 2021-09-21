@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -15,7 +16,7 @@ namespace SuperTokens.AspNetCore
 
         private static readonly TimeSpan RetryRefreshInterval = new(0, 0, 5, 0, 0);
 
-        private static readonly string[] SupportedApiVersions = new[] { "2.7" };
+        private static readonly string[] SupportedApiVersions = new[] { "2.7" }.OrderByDescending(str => new Version(str)).ToArray();
 
         private readonly ISystemClock _clock;
 
