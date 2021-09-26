@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 throw new ArgumentNullException(nameof(builder));
             }
-
+            builder.Services.TryAddSingleton<IApiVersionContainer, ApiVersionContainer>();
             builder.Services.TryAddSingleton<IHandshakeContainer, HandshakeContainer>();
             builder.Services.TryAddScoped<ISessionAccessor, SessionAccessor>();
             builder.Services.TryAddScoped<ISessionRecipe, SessionRecipe>();
