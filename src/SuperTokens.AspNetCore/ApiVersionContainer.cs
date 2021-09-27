@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -9,13 +10,13 @@ using SuperTokens.Net;
 
 namespace SuperTokens.AspNetCore
 {
-    internal sealed class ApiVersionContainer : BackgroundService
+    internal sealed class ApiVersionContainer : BackgroundService, IApiVersionContainer
     {
         private static readonly TimeSpan AutomaticRefreshInterval = new(0, 12, 0, 0, 0);
 
         private static readonly TimeSpan RetryRefreshInterval = new(0, 0, 5, 0, 0);
 
-        private static readonly string[] SupportedApiVersions = new[] { "2.9", "2.8", "2.7" };
+        private static readonly string[] SupportedApiVersions = new[] { "2.9", "2.8", "2.7" }.OrderByDescending(str => new Version(str)).ToArray();
 
         private readonly ISystemClock _clock;
 
@@ -42,6 +43,11 @@ namespace SuperTokens.AspNetCore
             return apiVersion != null
                 ? ValueTask.FromResult(apiVersion)
                 : new ValueTask<string>(this.RefreshApiVersionAsync(cancellationToken));
+        }
+
+        public ValueTask<string> GetApiVersionAsync()
+        {
+            return this.GetApiVersionAsync(CancellationToken.None);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)

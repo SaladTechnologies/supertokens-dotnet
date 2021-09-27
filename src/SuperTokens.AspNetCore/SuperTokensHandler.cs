@@ -28,11 +28,14 @@ namespace SuperTokens.AspNetCore
 
         private readonly IHandshakeContainer _handshakeContainer;
 
+        private readonly IApiVersionContainer _apiVersionContainer;
+
         private readonly ISessionAccessor _sessionAccessor;
 
         public SuperTokensHandler(
             ICoreApiClient coreApiClient,
             IHandshakeContainer handshakeContainer,
+            IApiVersionContainer apiVersionContainer,
             ISessionAccessor sessionAccessor,
             IOptionsMonitor<SuperTokensOptions> options,
             ILoggerFactory logger,
@@ -41,6 +44,7 @@ namespace SuperTokens.AspNetCore
             base(options, logger, encoder, clock)
         {
             _coreApiClient = coreApiClient ?? throw new ArgumentNullException(nameof(coreApiClient));
+            _apiVersionContainer = apiVersionContainer ?? throw new ArgumentNullException(nameof(apiVersionContainer));
             _handshakeContainer = handshakeContainer ?? throw new ArgumentNullException(nameof(handshakeContainer));
             _sessionAccessor = sessionAccessor ?? throw new ArgumentNullException(nameof(sessionAccessor));
         }
@@ -146,8 +150,9 @@ namespace SuperTokens.AspNetCore
                     // We will check the token value after parsing & validating the access token.
                 }
             }
+            var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Context.RequestAborted);
+            var handshake = await _handshakeContainer.GetHandshakeAsync(this.Options.CoreApiKey, cdiVersion, this.Context.RequestAborted);
 
-            var handshake = await _handshakeContainer.GetHandshakeAsync(this.Options.CoreApiKey, null, this.Context.RequestAborted);
             AccessToken? parsedAccessToken;
 
             // If we have no key old enough to verify this access token we should reject it without calling the core
@@ -208,7 +213,7 @@ namespace SuperTokens.AspNetCore
             {
                 var result = await _coreApiClient.VerifySessionAsync(
                     this.Options.CoreApiKey,
-                    null,
+                    cdiVersion,
                     new VerifySessionRequest
                     {
                         AccessToken = accessToken,
@@ -261,7 +266,8 @@ namespace SuperTokens.AspNetCore
             var result = await this.AuthenticateAsync();
             if (result.Succeeded)
             {
-                await _coreApiClient.DeleteSessionAsync(this.Options.CoreApiKey, null, new DeleteSessionRequest
+                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync();
+                await _coreApiClient.DeleteSessionAsync(this.Options.CoreApiKey, cdiVersion, new DeleteSessionRequest
                 {
                     SessionHandles = new() { _sessionAccessor.Session!.Handle },
                 });
@@ -439,9 +445,10 @@ namespace SuperTokens.AspNetCore
 
             try
             {
+                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Context.RequestAborted);
                 var result = await _coreApiClient.RefreshSessionAsync(
                     this.Options.CoreApiKey,
-                    null,
+                    cdiVersion,
                     new RefreshSessionRequest
                     {
                         AntiCsrfToken = antiCsrfToken,
@@ -488,7 +495,8 @@ namespace SuperTokens.AspNetCore
             var result = await this.AuthenticateAsync();
             if (result.Succeeded)
             {
-                await _coreApiClient.DeleteSessionAsync(this.Options.CoreApiKey, null, new DeleteSessionRequest
+                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Context.RequestAborted);
+                await _coreApiClient.DeleteSessionAsync(this.Options.CoreApiKey, cdiVersion, new DeleteSessionRequest
                 {
                     SessionHandles = new() { _sessionAccessor.Session!.Handle },
                 });

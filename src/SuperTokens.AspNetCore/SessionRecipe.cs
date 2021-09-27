@@ -14,6 +14,7 @@ namespace SuperTokens.AspNetCore
     public class SessionRecipe : ISessionRecipe
     {
         private readonly ICoreApiClient _coreApiClient;
+        private readonly IApiVersionContainer _apiVersionContainer;
 
         private readonly IHandshakeContainer _handshakeContainer;
 
@@ -23,13 +24,14 @@ namespace SuperTokens.AspNetCore
 
         private readonly ISessionAccessor _sessionAccessor;
 
-        public SessionRecipe(ICoreApiClient coreApiClient, IHandshakeContainer handshakeContainer, ISessionAccessor sessionAccessor, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<SuperTokensOptions> options)
+        public SessionRecipe(ICoreApiClient coreApiClient, IHandshakeContainer handshakeContainer, ISessionAccessor sessionAccessor, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<SuperTokensOptions> options, IApiVersionContainer apiVersionContainer)
         {
             _coreApiClient = coreApiClient ?? throw new ArgumentNullException(nameof(coreApiClient));
             _handshakeContainer = handshakeContainer ?? throw new ArgumentNullException(nameof(handshakeContainer));
             _sessionAccessor = sessionAccessor ?? throw new ArgumentNullException(nameof(sessionAccessor));
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
             _options = options ?? throw new ArgumentNullException(nameof(options));
+            _apiVersionContainer = apiVersionContainer ?? throw new ArgumentNullException(nameof(apiVersionContainer));
         }
 
         public async Task<SuperTokensSession> AuthenticateAsync(string userId)
@@ -40,7 +42,8 @@ namespace SuperTokens.AspNetCore
             var emptyObject = document.RootElement.Clone();
             document.Dispose();
 
-            var result = await _coreApiClient.CreateSessionAsync(options.CoreApiKey, null, new CreateSessionRequest
+            var cdiVersion = await _apiVersionContainer.GetApiVersionAsync();
+            var result = await _coreApiClient.CreateSessionAsync(options.CoreApiKey, cdiVersion, new CreateSessionRequest
             {
                 EnableAntiCsrf = options.AntiCsrfMode == SuperTokensAntiCsrfMode.ViaToken,
                 UserDataInDatabase = emptyObject,
