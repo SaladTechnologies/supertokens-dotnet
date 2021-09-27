@@ -23,13 +23,14 @@ namespace SuperTokens.AspNetCore
         /// </summary>
         private const string VersionTwoHeader = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsInZlcnNpb24iOiIyIn0=";
 
-        public static bool TryParse(string jwt, [NotNullWhen(true)] out string? jwtPayload)
+        public static bool TryParse(string jwt, [NotNullWhen(true)] out string? jwtPayload, out string[]? components)
         {
             // Parse JWT.
-            var components = jwt.Split('.');
+            components = jwt.Split('.');
             if (components.Length != 3 || components[1].Length == 0)
             {
                 jwtPayload = null;
+                components = null;
                 return false;
             }
 
@@ -37,6 +38,7 @@ namespace SuperTokens.AspNetCore
             if (!VersionOneHeader.Equals(components[0], StringComparison.Ordinal) && !VersionTwoHeader.Equals(components[0], StringComparison.Ordinal))
             {
                 jwtPayload = null;
+                components = null;
                 return false;
             }
 
@@ -45,6 +47,7 @@ namespace SuperTokens.AspNetCore
             if (!Convert.TryFromBase64String(components[1], buffer, out var bufferLength))
             {
                 jwtPayload = null;
+                components = null;
                 return false;
             }
 
@@ -81,17 +84,20 @@ namespace SuperTokens.AspNetCore
             }
 
             jwtPayload = Encoding.UTF8.GetString(buffer.Slice(0, bufferLength));
+            isSignatureValid = Validate(components, jwtSigningPublicKey);
+            return true;
+        }
 
+        public static bool Validate(string[] components, string jwtSigningPublicKey)
+        {
             // Verify JWT signature.
-            using var rsa = RSA.Create();
-
+            var rsa = RSA.Create();
             var key = Convert.FromBase64String(jwtSigningPublicKey);
             rsa.ImportSubjectPublicKeyInfo(key, out _);
 
             var data = Encoding.UTF8.GetBytes($"{components[0]}.{components[1]}");
             var signature = Convert.FromBase64String(components[2]);
-            isSignatureValid = rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-            return true;
+            return rsa.VerifyData(data, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         }
     }
 }

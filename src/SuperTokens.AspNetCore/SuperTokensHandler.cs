@@ -154,27 +154,44 @@ namespace SuperTokens.AspNetCore
             var handshake = await _handshakeContainer.GetHandshakeAsync(this.Options.CoreApiKey, cdiVersion, this.Context.RequestAborted);
 
             AccessToken? parsedAccessToken;
-            var isSignatureValid = false;
-            if (handshake.JwtSigningPublicKeyExpiration > now)
+
+            // If we have no key old enough to verify this access token we should reject it without calling the core
+
+            if (!JwtUtilities.TryParse(accessToken, out var jwtPayload, out var components) ||
+                !AccessTokenUtilities.TryParse(jwtPayload, out parsedAccessToken))
             {
-                if (!JwtUtilities.TryParseAndValidate(accessToken, handshake.JwtSigningPublicKey, out var jwtPayload, out isSignatureValid) ||
-                    !AccessTokenUtilities.TryParse(jwtPayload, out parsedAccessToken))
-                {
-                    await this.SendTryRefreshTokenResponse();
-                    return AuthenticateResult.Fail("The access token is invalid.");
-                }
-            }
-            else
-            {
-                if (!JwtUtilities.TryParse(accessToken, out var jwtPayload) ||
-                    !AccessTokenUtilities.TryParse(jwtPayload, out parsedAccessToken))
-                {
-                    await this.SendTryRefreshTokenResponse();
-                    return AuthenticateResult.Fail("The access token is invalid.");
-                }
+                await this.SendTryRefreshTokenResponse();
+                return AuthenticateResult.Fail("The access token is invalid.");
             }
 
             if (parsedAccessToken.ExpiryTime < now)
+            {
+                await this.SendTryRefreshTokenResponse();
+                return AuthenticateResult.Fail("The access token expired.");
+            }
+
+            var foundSigningKeyOlderThanToken = false;
+            var isSignatureValid = false;
+            foreach (var keyInfo in handshake.GetAccessTokenSigningPublicKeyList(now))
+            {
+                if (JwtUtilities.Validate(components, keyInfo.PublicKey))
+                {
+                    // If we reached a key older than the token then we don't need to try older keys since
+                    // the keys are always signed with the latest available key
+                    // The keylist in the handshake is ordered from newest to oldest.
+                    isSignatureValid = true;
+                }
+                if (keyInfo.Creation < parsedAccessToken.TimeCreated)
+                {
+                    foundSigningKeyOlderThanToken = true;
+                    break;
+                }
+            }
+
+            // If the token was created before the oldest key in the cache but hasn't expired, then a config value must've changed.
+            // E.g., the access_token_signing_key_update_interval was reduced, or access_token_signing_key_dynamic was turned on.
+            // Either way, the user needs to refresh the access token as validating by the server is likely to do nothing.
+            if (!foundSigningKeyOlderThanToken)
             {
                 await this.SendTryRefreshTokenResponse();
                 return AuthenticateResult.Fail("The access token expired.");
@@ -208,7 +225,7 @@ namespace SuperTokens.AspNetCore
 
                 if (!string.IsNullOrEmpty(result.JwtSigningPublicKey))
                 {
-                    await _handshakeContainer.OnHandshakeChanged(result.JwtSigningPublicKey, DateTimeOffset.FromUnixTimeMilliseconds(result.JwtSigningPublicKeyExpiryTime));
+                    await _handshakeContainer.OnHandshakeChanged(result.JwtSigningPublicKeyList, result.JwtSigningPublicKey, DateTimeOffset.FromUnixTimeMilliseconds(result.JwtSigningPublicKeyExpiryTime));
                 }
 
                 if ("TRY_REFRESH_TOKEN".Equals(result.Status, StringComparison.Ordinal))
