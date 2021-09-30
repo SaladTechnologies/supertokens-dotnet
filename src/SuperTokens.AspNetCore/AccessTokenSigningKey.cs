@@ -14,15 +14,17 @@ namespace SuperTokens.AspNetCore
             this.Creation = creation;
         }
 
-        public string PublicKey { get; }
+        public DateTimeOffset Creation { get; }
 
         public DateTimeOffset Expiration { get; }
-        public DateTimeOffset Creation { get; }
+
+        public string PublicKey { get; }
 
         public override bool Equals(object? obj) => this.Equals(obj as AccessTokenSigningKey);
 
         // We do not consider the creation time during equality check: this information is not available on old APIs.
         public bool Equals(AccessTokenSigningKey? other) => other != null && this.PublicKey == other.PublicKey && this.Expiration.Equals(other.Expiration);
+
         public override int GetHashCode() => HashCode.Combine(this.PublicKey, this.Expiration, this.Creation);
     }
 }

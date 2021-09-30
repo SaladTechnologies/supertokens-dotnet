@@ -5,7 +5,8 @@ namespace SuperTokens.AspNetCore
 {
     public interface IApiVersionContainer
     {
-        ValueTask<string> GetApiVersionAsync(CancellationToken cancellationToken);
-        ValueTask<string> GetApiVersionAsync();
+        ValueTask<string> GetApiVersionAsync(string? apiKey);
+
+        ValueTask<string> GetApiVersionAsync(string? apiKey, CancellationToken cancellationToken);
     }
 }
