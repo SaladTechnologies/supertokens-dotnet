@@ -24,11 +24,11 @@ namespace SuperTokens.AspNetCore
 {
     public class SuperTokensHandler : SignOutAuthenticationHandler<SuperTokensOptions>, IAuthenticationRequestHandler
     {
+        private readonly IApiVersionContainer _apiVersionContainer;
+
         private readonly ICoreApiClient _coreApiClient;
 
         private readonly IHandshakeContainer _handshakeContainer;
-
-        private readonly IApiVersionContainer _apiVersionContainer;
 
         private readonly ISessionAccessor _sessionAccessor;
 
@@ -150,7 +150,8 @@ namespace SuperTokens.AspNetCore
                     // We will check the token value after parsing & validating the access token.
                 }
             }
-            var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Context.RequestAborted);
+
+            var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Options.CoreApiKey, this.Context.RequestAborted);
             var handshake = await _handshakeContainer.GetHandshakeAsync(this.Options.CoreApiKey, cdiVersion, this.Context.RequestAborted);
 
             AccessToken? parsedAccessToken;
@@ -176,9 +177,9 @@ namespace SuperTokens.AspNetCore
             {
                 if (JwtUtilities.Validate(components, keyInfo.PublicKey))
                 {
-                    // If we reached a key older than the token then we don't need to try older keys since
-                    // the keys are always signed with the latest available key
-                    // The keylist in the handshake is ordered from newest to oldest.
+                    // If we reached a key older than the token then we don't need to try older keys since the keys are
+                    // always signed with the latest available key The keylist in the handshake is ordered from newest
+                    // to oldest.
                     isSignatureValid = true;
                 }
                 if (keyInfo.Creation < parsedAccessToken.TimeCreated)
@@ -188,9 +189,10 @@ namespace SuperTokens.AspNetCore
                 }
             }
 
-            // If the token was created before the oldest key in the cache but hasn't expired, then a config value must've changed.
-            // E.g., the access_token_signing_key_update_interval was reduced, or access_token_signing_key_dynamic was turned on.
-            // Either way, the user needs to refresh the access token as validating by the server is likely to do nothing.
+            // If the token was created before the oldest key in the cache but hasn't expired, then a config value
+            // must've changed. E.g., the access_token_signing_key_update_interval was reduced, or
+            // access_token_signing_key_dynamic was turned on. Either way, the user needs to refresh the access token as
+            // validating by the server is likely to do nothing.
             if (!foundSigningKeyOlderThanToken)
             {
                 await this.SendTryRefreshTokenResponse();
@@ -266,7 +268,7 @@ namespace SuperTokens.AspNetCore
             var result = await this.AuthenticateAsync();
             if (result.Succeeded)
             {
-                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync();
+                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Options.CoreApiKey, this.Context.RequestAborted);
                 await _coreApiClient.DeleteSessionAsync(this.Options.CoreApiKey, cdiVersion, new DeleteSessionRequest
                 {
                     SessionHandles = new() { _sessionAccessor.Session!.Handle },
@@ -445,7 +447,7 @@ namespace SuperTokens.AspNetCore
 
             try
             {
-                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Context.RequestAborted);
+                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Options.CoreApiKey, this.Context.RequestAborted);
                 var result = await _coreApiClient.RefreshSessionAsync(
                     this.Options.CoreApiKey,
                     cdiVersion,
@@ -495,7 +497,7 @@ namespace SuperTokens.AspNetCore
             var result = await this.AuthenticateAsync();
             if (result.Succeeded)
             {
-                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Context.RequestAborted);
+                var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(this.Options.CoreApiKey, this.Context.RequestAborted);
                 await _coreApiClient.DeleteSessionAsync(this.Options.CoreApiKey, cdiVersion, new DeleteSessionRequest
                 {
                     SessionHandles = new() { _sessionAccessor.Session!.Handle },

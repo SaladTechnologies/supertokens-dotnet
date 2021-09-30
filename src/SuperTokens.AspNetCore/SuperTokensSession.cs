@@ -11,8 +11,8 @@
 
         public string Handle { get; }
 
-        public string UserId { get; }
-
         public string UserDataInJwt { get; }
+
+        public string UserId { get; }
     }
 }

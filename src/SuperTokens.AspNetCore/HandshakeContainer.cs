@@ -1,10 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Logging;
 using SuperTokens.Net;
@@ -28,6 +28,9 @@ namespace SuperTokens.AspNetCore
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         }
+
+        public Task<Handshake> GetHandshakeAsync(string? apiKey, string? cdiVersion) =>
+            this.GetHandshakeAsync(apiKey, cdiVersion, CancellationToken.None);
 
         public async Task<Handshake> GetHandshakeAsync(string? apiKey, string? cdiVersion, CancellationToken cancellationToken)
         {

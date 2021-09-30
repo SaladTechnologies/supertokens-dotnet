@@ -61,10 +61,13 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 throw new ArgumentNullException(nameof(builder));
             }
-            builder.Services.TryAddSingleton<IApiVersionContainer, ApiVersionContainer>();
-            builder.Services.TryAddSingleton<IHandshakeContainer, HandshakeContainer>();
-            builder.Services.TryAddScoped<ISessionAccessor, SessionAccessor>();
-            builder.Services.TryAddScoped<ISessionRecipe, SessionRecipe>();
+
+            builder.Services.AddSingleton<ApiVersionContainer>();
+            builder.Services.AddSingleton<IApiVersionContainer>(services => services.GetRequiredService<ApiVersionContainer>());
+            builder.Services.AddHostedService(services => services.GetRequiredService<ApiVersionContainer>());
+            builder.Services.AddSingleton<IHandshakeContainer, HandshakeContainer>();
+            builder.Services.AddScoped<ISessionAccessor, SessionAccessor>();
+            builder.Services.AddScoped<ISessionRecipe, SessionRecipe>();
             builder.Services.AddHttpClient<ICoreApiClient, CoreApiClient>((services, httpClient) =>
             {
                 var options = services.GetRequiredService<IOptionsMonitor<SuperTokensOptions>>().Get(authenticationScheme);

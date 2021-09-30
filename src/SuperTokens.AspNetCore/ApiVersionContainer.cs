@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SuperTokens.Net;
 
 namespace SuperTokens.AspNetCore
@@ -22,6 +23,8 @@ namespace SuperTokens.AspNetCore
 
         private readonly ILogger<ApiVersionContainer> _logger;
 
+        private readonly IOptionsMonitor<SuperTokensOptions> _options;
+
         private readonly SemaphoreSlim _refreshLock = new(1);
 
         private readonly IServiceProvider _services;
@@ -30,24 +33,23 @@ namespace SuperTokens.AspNetCore
 
         private DateTimeOffset _refreshAfter = DateTimeOffset.MinValue;
 
-        public ApiVersionContainer(IServiceProvider services, ISystemClock clock, ILogger<ApiVersionContainer> logger)
+        public ApiVersionContainer(IServiceProvider services, ISystemClock clock, IOptionsMonitor<SuperTokensOptions> options, ILogger<ApiVersionContainer> logger)
         {
             _services = services ?? throw new ArgumentNullException(nameof(services));
             _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public ValueTask<string> GetApiVersionAsync(CancellationToken cancellationToken)
+        public ValueTask<string> GetApiVersionAsync(string? apiKey) =>
+            this.GetApiVersionAsync(apiKey, CancellationToken.None);
+
+        public ValueTask<string> GetApiVersionAsync(string? apiKey, CancellationToken cancellationToken)
         {
             var apiVersion = _apiVersion;
             return apiVersion != null
                 ? ValueTask.FromResult(apiVersion)
-                : new ValueTask<string>(this.RefreshApiVersionAsync(cancellationToken));
-        }
-
-        public ValueTask<string> GetApiVersionAsync()
-        {
-            return this.GetApiVersionAsync(CancellationToken.None);
+                : new ValueTask<string>(this.RefreshApiVersionAsync(apiKey, cancellationToken));
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -58,7 +60,8 @@ namespace SuperTokens.AspNetCore
 
                 try
                 {
-                    await this.RefreshApiVersionAsync(stoppingToken);
+                    var options = _options.Get(SuperTokensDefaults.AuthenticationScheme);
+                    await this.RefreshApiVersionAsync(options.CoreApiKey, stoppingToken);
                 }
                 catch (Exception e)
                 {
@@ -76,7 +79,7 @@ namespace SuperTokens.AspNetCore
         private static NotSupportedException NewNotSupportedException(Exception? innerException = null) =>
             new("This version of the SuperTokens SDK does not support the specified SuperTokens Core.", innerException);
 
-        private async Task<string> RefreshApiVersionAsync(CancellationToken cancellationToken)
+        private async Task<string> RefreshApiVersionAsync(string? apiKey, CancellationToken cancellationToken)
         {
             var now = _clock.UtcNow;
 
@@ -88,7 +91,7 @@ namespace SuperTokens.AspNetCore
                     var coreApiClient = _services.GetRequiredService<ICoreApiClient>();
                     try
                     {
-                        var result = await coreApiClient.GetApiVersionAsync(null, CancellationToken.None);
+                        var result = await coreApiClient.GetApiVersionAsync(apiKey, CancellationToken.None);
                         string? matchedApiVersion = null;
                         foreach (var supportedVersion in SupportedApiVersions)
                         {

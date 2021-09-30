@@ -13,8 +13,9 @@ namespace SuperTokens.AspNetCore
 {
     public class SessionRecipe : ISessionRecipe
     {
-        private readonly ICoreApiClient _coreApiClient;
         private readonly IApiVersionContainer _apiVersionContainer;
+
+        private readonly ICoreApiClient _coreApiClient;
 
         private readonly IHandshakeContainer _handshakeContainer;
 
@@ -42,7 +43,7 @@ namespace SuperTokens.AspNetCore
             var emptyObject = document.RootElement.Clone();
             document.Dispose();
 
-            var cdiVersion = await _apiVersionContainer.GetApiVersionAsync();
+            var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(options.CoreApiKey);
             var result = await _coreApiClient.CreateSessionAsync(options.CoreApiKey, cdiVersion, new CreateSessionRequest
             {
                 EnableAntiCsrf = options.AntiCsrfMode == SuperTokensAntiCsrfMode.ViaToken,

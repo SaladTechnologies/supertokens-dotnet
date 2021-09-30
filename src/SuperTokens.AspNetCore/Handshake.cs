@@ -22,13 +22,13 @@ namespace SuperTokens.AspNetCore
             this.RefreshTokenLifetime = refreshTokenLifetime;
         }
 
-        public ImmutableArray<AccessTokenSigningKey> GetAccessTokenSigningPublicKeyList(DateTimeOffset now) =>
-            _accessTokenSigningPublicKeyList.Where(keyInfo => keyInfo.Expiration > now).ToImmutableArray();
-
         public bool AccessTokenBlacklistingEnabled { get; }
 
         public TimeSpan AccessTokenLifetime { get; }
 
         public TimeSpan RefreshTokenLifetime { get; }
+
+        public ImmutableArray<AccessTokenSigningKey> GetAccessTokenSigningPublicKeyList(DateTimeOffset now) =>
+            _accessTokenSigningPublicKeyList.Where(keyInfo => keyInfo.Expiration > now).ToImmutableArray();
     }
 }
