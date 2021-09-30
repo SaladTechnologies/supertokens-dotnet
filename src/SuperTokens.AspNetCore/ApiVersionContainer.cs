@@ -15,6 +15,8 @@ namespace SuperTokens.AspNetCore
     {
         private static readonly TimeSpan AutomaticRefreshInterval = new(0, 12, 0, 0, 0);
 
+        private static readonly TimeSpan MinAutomaticRefreshInterval = new(0, 0, 1, 0, 0);
+
         private static readonly TimeSpan RetryRefreshInterval = new(0, 0, 5, 0, 0);
 
         private static readonly string[] SupportedApiVersions = new[] { "2.9", "2.8", "2.7" }.OrderByDescending(str => new Version(str)).ToArray();
@@ -69,10 +71,12 @@ namespace SuperTokens.AspNetCore
                 }
 
                 var delay = _refreshAfter - _clock.UtcNow;
-                if (delay > TimeSpan.Zero)
+                if (delay < MinAutomaticRefreshInterval)
                 {
-                    await Task.Delay(delay, stoppingToken);
+                    delay = MinAutomaticRefreshInterval;
                 }
+
+                await Task.Delay(delay, stoppingToken);
             }
         }
 
