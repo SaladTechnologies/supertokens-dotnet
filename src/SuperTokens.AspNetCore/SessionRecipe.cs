@@ -13,6 +13,8 @@ namespace SuperTokens.AspNetCore
 {
     public class SessionRecipe : ISessionRecipe
     {
+        private readonly IApiVersionContainer _apiVersionContainer;
+
         private readonly ICoreApiClient _coreApiClient;
 
         private readonly IHandshakeContainer _handshakeContainer;
@@ -23,13 +25,14 @@ namespace SuperTokens.AspNetCore
 
         private readonly ISessionAccessor _sessionAccessor;
 
-        public SessionRecipe(ICoreApiClient coreApiClient, IHandshakeContainer handshakeContainer, ISessionAccessor sessionAccessor, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<SuperTokensOptions> options)
+        public SessionRecipe(ICoreApiClient coreApiClient, IHandshakeContainer handshakeContainer, ISessionAccessor sessionAccessor, IHttpContextAccessor httpContextAccessor, IOptionsMonitor<SuperTokensOptions> options, IApiVersionContainer apiVersionContainer)
         {
             _coreApiClient = coreApiClient ?? throw new ArgumentNullException(nameof(coreApiClient));
             _handshakeContainer = handshakeContainer ?? throw new ArgumentNullException(nameof(handshakeContainer));
             _sessionAccessor = sessionAccessor ?? throw new ArgumentNullException(nameof(sessionAccessor));
             _httpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
             _options = options ?? throw new ArgumentNullException(nameof(options));
+            _apiVersionContainer = apiVersionContainer ?? throw new ArgumentNullException(nameof(apiVersionContainer));
         }
 
         public async Task<SuperTokensSession> AuthenticateAsync(string userId)
@@ -40,7 +43,8 @@ namespace SuperTokens.AspNetCore
             var emptyObject = document.RootElement.Clone();
             document.Dispose();
 
-            var result = await _coreApiClient.CreateSessionAsync(options.CoreApiKey, null, new CreateSessionRequest
+            var cdiVersion = await _apiVersionContainer.GetApiVersionAsync(options.CoreApiKey);
+            var result = await _coreApiClient.CreateSessionAsync(options.CoreApiKey, cdiVersion, new CreateSessionRequest
             {
                 EnableAntiCsrf = options.AntiCsrfMode == SuperTokensAntiCsrfMode.ViaToken,
                 UserDataInDatabase = emptyObject,
@@ -52,7 +56,7 @@ namespace SuperTokens.AspNetCore
                 throw new InvalidOperationException("Failed to login the user.");
             }
 
-            await _handshakeContainer.OnHandshakeChanged(result.JwtSigningPublicKey, DateTimeOffset.FromUnixTimeMilliseconds(result.JwtSigningPublicKeyExpiryTime));
+            await _handshakeContainer.OnHandshakeChanged(result.JwtSigningPublicKeyList, result.JwtSigningPublicKey, DateTimeOffset.FromUnixTimeMilliseconds(result.JwtSigningPublicKeyExpiryTime));
 
             var context = _httpContextAccessor.HttpContext ?? throw new InvalidOperationException("The session recipe only works in a HTTP context.");
             if (context.Response.HasStarted)

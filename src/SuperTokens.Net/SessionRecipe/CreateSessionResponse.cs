@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace SuperTokens.Net.SessionRecipe
 {
@@ -12,6 +13,9 @@ namespace SuperTokens.Net.SessionRecipe
 
         [JsonPropertyName("idRefreshToken")]
         public Core.CookieInfo IdRefreshToken { get; set; } = null!;
+
+        [JsonPropertyName("jwtSigningPublicKeyList")]
+        public List<KeyInfo>? JwtSigningPublicKeyList { get; set; } = null;
 
         [JsonPropertyName("jwtSigningPublicKey")]
         public string JwtSigningPublicKey { get; set; } = null!;
