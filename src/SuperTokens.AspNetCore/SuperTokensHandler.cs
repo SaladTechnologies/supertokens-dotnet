@@ -263,6 +263,16 @@ namespace SuperTokens.AspNetCore
             }
         }
 
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            if (this.Response.HasStarted)
+            {
+                return Task.CompletedTask;
+            }
+
+            return base.HandleChallengeAsync(properties);
+        }
+
         protected override async Task HandleSignOutAsync(AuthenticationProperties? properties)
         {
             var result = await this.AuthenticateAsync();
